@@ -1,18 +1,32 @@
+using AutoMapper;
 using BackEnd_Angular;
 using BackEnd_Angular.Filters;
 using BackEnd_Angular.Utilities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite;
+using NetTopologySuite.Geometries;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddAutoMapper(typeof(Program));
 
+builder.Services.AddSingleton(provider =>
+	new MapperConfiguration(config =>
+	{
+		var geometryFactory = provider.GetRequiredService<GeometryFactory>();
+		config.AddProfile(new AutoMapperProfiles(geometryFactory));
+	}).CreateMapper());
+
 builder.Services.AddTransient<IAzureStorage, AzureStorage>();
 
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-	options.UseSqlServer("name=DefaultConnection"));
+	options.UseSqlServer("name=DefaultConnection", x => x.UseNetTopologySuite()));
+
+builder.Services.AddSingleton<GeometryFactory>(NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326));
 
 builder.Services.AddCors(options =>
 {
@@ -44,6 +58,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseStaticFiles();
 
 app.UseCors();
 
