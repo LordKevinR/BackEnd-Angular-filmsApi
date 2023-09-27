@@ -1,4 +1,5 @@
-﻿using BackEnd_Angular.Validations;
+﻿using BackEnd_Angular.Entities.RelationshipEntities;
+using BackEnd_Angular.Validations;
 using System.ComponentModel.DataAnnotations;
 
 namespace BackEnd_Angular.Entities
@@ -12,5 +13,7 @@ namespace BackEnd_Angular.Entities
         [FirstCapitalLetter]
         public string Name { get; set; } = null!;
 
+        //navigation properties
+        public List<GenresFilms> GenresFilms { get; set; }
     }
 }

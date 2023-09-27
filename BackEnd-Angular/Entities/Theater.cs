@@ -1,4 +1,5 @@
-﻿using NetTopologySuite.Geometries;
+﻿using BackEnd_Angular.Entities.RelationshipEntities;
+using NetTopologySuite.Geometries;
 using System.ComponentModel.DataAnnotations;
 
 namespace BackEnd_Angular.Entities
@@ -10,5 +11,8 @@ namespace BackEnd_Angular.Entities
         [StringLength(75)]
         public string Name { get; set; }
         public Point Location { get; set; }
+
+		//navigation properties
+		public List<TheatersFilms> TheatersFilms { get; set; }
     }
 }
