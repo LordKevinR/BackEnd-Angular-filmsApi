@@ -73,7 +73,7 @@ namespace BackEnd_Angular.Controllers
 		[HttpDelete("{id:int}")]
 		public async Task<ActionResult> Delete(int id)
 		{
-			var exist = await context.Actors.AnyAsync(x => x.Id == id);
+			var exist = await context.Theaters.AnyAsync(x => x.Id == id);
 
 			if (!exist)
 			{

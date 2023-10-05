@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using BackEnd_Angular.DTOs;
 using BackEnd_Angular.DTOs.ActorDTOs;
+using BackEnd_Angular.DTOs.ActorFilmDTOs;
 using BackEnd_Angular.Entities;
 using BackEnd_Angular.Utilities;
 using Microsoft.AspNetCore.Mvc;
@@ -44,6 +45,18 @@ namespace BackEnd_Angular.Controllers
 			}
 
 			return mapper.Map<ActorDTO>(actor);
+		}
+
+		[HttpPost("getByName")]
+		public async Task<ActionResult<List<ActorFilmDTO>>> GetByName([FromBody] string name)
+		{
+			if (string.IsNullOrWhiteSpace(name)) { return new List<ActorFilmDTO>(); }
+
+			return await context.Actors
+				.Where(x => x.Name.Contains(name))
+				.Select(x => new ActorFilmDTO { Id = x.Id, Name = x.Name, Photo = x.Photo })
+				.Take(5)
+				.ToListAsync();
 		}
 
 		[HttpPost]
