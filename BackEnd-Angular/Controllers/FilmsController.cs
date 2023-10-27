@@ -26,6 +26,31 @@ namespace BackEnd_Angular.Controllers
 			this.azureStorage = azureStorage;
 		}
 
+		[HttpGet]
+		public async Task<ActionResult<LandingPageDTO>> Get()
+		{
+			var top = 6;
+			var today = DateTime.Today;
+
+			var nextRealeases = await context.Films
+				.Where(x => x.ReleaseDate > today)
+				.OrderBy(x => x.ReleaseDate)
+				.Take(top)
+				.ToListAsync();
+
+			var inTheaters = await context.Films
+				.Where(x => x.InTheaters)
+				.OrderBy(x => x.ReleaseDate)
+				.Take(top)
+				.ToListAsync();
+
+			var result = new LandingPageDTO();
+			result.NextReleases = mapper.Map<List<FilmDTO>>(nextRealeases);
+			result.InTheaters = mapper.Map<List<FilmDTO>>(inTheaters);
+
+			return result;
+		}
+
 		[HttpGet("{id:int}")]
 		public async Task<ActionResult<FilmDTO>> GetById(int id)
 		{
@@ -41,7 +66,65 @@ namespace BackEnd_Angular.Controllers
 			dto.Actors = dto.Actors.OrderBy( x => x.Order).ToList();
 
 			return dto;
-		} 
+		}
+
+		[HttpGet("PutGet/{id:int}")]
+		public async Task<ActionResult<FilmsPutGetDTO>> PutGet(int id)
+		{
+			var filmActionResult = await GetById(id);
+			if(filmActionResult.Result is NotFoundResult) { return NotFound(); }
+
+			var film = filmActionResult.Value;
+
+			var selectedGenresId = film.Genres.Select(x => x.Id).ToList();
+			var noSelectedGenres = await context.Genres
+				.Where(x => !selectedGenresId.Contains(x.Id))
+				.ToListAsync();
+
+			var selectedTheatersId = film.Theaters.Select(x => x.Id).ToList();
+			var noSelectedTheaters = await context.Theaters
+				.Where(x => !selectedTheatersId.Contains(x.Id))
+				.ToListAsync();
+
+			var noSelectedGenresDTO = mapper.Map<List<GenreDTO>>(noSelectedGenres);
+			var noSelectedTheatersDTO = mapper.Map<List<TheaterDTO>>(noSelectedTheaters);
+
+			var response = new FilmsPutGetDTO();
+			response.Film = film;
+			response.SelectedGenres = film.Genres;
+			response.NoSelectedGenres = noSelectedGenresDTO;
+			response.SelectedTheaters = film.Theaters;
+			response.NoSelectedTheaters = noSelectedTheatersDTO;
+			response.Actors = film.Actors;
+			return response;
+		}
+
+		[HttpPut("{id:int}")]
+		public async Task<ActionResult> Put(int id, [FromBody] FilmCreationDTO filmCreationDTO)
+		{
+			var film = await context.Films
+				.Include(x => x.ActorsFilms)
+				.Include(x => x.GenresFilms)
+				.Include(x => x.TheatersFilms)
+				.FirstOrDefaultAsync(x => x.Id == id);
+
+			if (film is null)
+			{
+				return NotFound();
+			}
+
+			film = mapper.Map(filmCreationDTO, film);
+
+			if (filmCreationDTO.Poster != null)
+			{
+				film.Poster = await azureStorage.EditFile(_container, filmCreationDTO.Poster, film.Poster);
+			}
+
+			WriteActorsOrder(film);
+
+			await context.SaveChangesAsync();
+			return NoContent();
+		}
 
 
 		[HttpPost]
